@@ -240,19 +240,20 @@ def solve_block_greedy(schedule, max_on_break=2, top_per_block=2):
         top_solutions = next_round_solutions
         top_scores = next_round_scores
 
-        print_solution(schedule, top_solutions[0], max_block=block)
+        print_solution_blockwise(schedule, top_solutions[0], max_block=block)
+        print ''
 
     print '***** SOLUTION 1 *****'
-    print_solution(schedule, top_solutions[0])
+    print_solution_blockwise(schedule, top_solutions[0])
     print '***** SOLUTION 2 *****'
-    print_solution(schedule, top_solutions[1])
+    print_solution_blockwise(schedule, top_solutions[1])
     print 'Scores: ', next_round_scores
     # import matplotlib.pylab as plt
     # plt.hist(next_round_scores, bins=50)
     # plt.show()
     # return
 
-def print_solution(schedule, solution, max_block=None):
+def print_solution_taskwise(schedule, solution, max_block=None):
     for task in schedule.tasks:
         print task
         for block in task.blocks:
@@ -270,6 +271,28 @@ def print_solution(schedule, solution, max_block=None):
         if len(staffers) > 0:
             print '{}: {}'.format(schedule.block_times[block], ', '.join(staffers))
     print ''
+
+def print_solution_blockwise(schedule, solution, max_block=None):
+    width = 25
+    header = 'Time'.ljust(8) + ''.join([str(task).ljust(width) for task in schedule.tasks]) + ' Breaks'.ljust(width)
+    print header
+    for block in schedule.blocks:
+        if max_block is not None and block > max_block:
+            break
+        line = '{}: '.format(schedule.block_times[block]).ljust(8)
+        for task in schedule.tasks:
+            if block in task.blocks:
+                staffers = [str(solution['{} {} {}'.format(schedule.block_times[block], task, i)]) for i in range(task.nstaffers)]
+                line += ', '.join([str(s) for s in staffers]).ljust(width)
+            else:
+                line += ''.ljust(width)
+        if block >= schedule.min_break_block and block <= schedule.max_break_block:
+            staffers = [str(solution['{} Break {}'.format(schedule.block_times[block], i)]) for i in range(schedule.max_on_break)]
+            line += ', '.join([str(s) for s in staffers if s != 'None']).ljust(width)
+        else:
+            line += ''.ljust(width)
+        print line
+
 
 
 if __name__ == '__main__':

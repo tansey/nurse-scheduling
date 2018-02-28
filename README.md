@@ -1,5 +1,40 @@
 # Nurse scheduling
-This is a simple proof-of-concept project to help mental health nurses schedule their day.
+This is a simple proof-of-concept project to help mental health nurses schedule their day. The app will take the staffer lists, and the different tasks for the day, and create a schedule automatically that tries to balance all the preferences for breaks, minimal RMNs on observations, etc.
+
+## Example
+Imagine we have a schedule setup like the following example done by-hand by an RMN:
+
+![Example schedule](https://raw.githubusercontent.com/tansey/nurse-scheduling/master/example.jpg)
+
+The current scheduler app would output the following schedule automatically:
+
+    Time    Medication               General observations     Patient A (2:1)          Patient B (2:1)          Patient C (1:1)           Breaks
+    7:30:                            Marie                    Sally, Maxine            Nicola, Douglas          Bob                             
+    8:00:                            Marie                    Sally, Maxine            Nicola, Douglas          Bob                             
+    8:30:   Jack                     Bob                      Sally, Lily              Douglas, Nicola          Marie                           
+    9:00:                            Lily                     Maxine, Bob              Jack, Nicola             Jenny                           
+    9:30:                            Marie                    Maxine, Jenny            Douglas, Bob             Sally                           
+    10:00:                           Maxine                   Sally, Jenny             Nicola, Bob              Marie                           
+    10:30:                           Sally                    Marie, Jenny             Nicola, Bob              Jack                            
+    11:00:                           Maxine                   Nicola, Jenny            Jack, Bob                Sally                           
+    11:30:                           Maxine                   Sally, Bob               Jack, Nicola             Marie                           
+    12:00:                           Maxine                   Jenny, Sally             Bob, Jack                Marie                           
+    12:30:  Jack                     Marie                    Maxine, Sally            Nicola, Bob              Jenny                           
+    13:00:                           Jenny                    Jack, Marie              Nicola, Bob              Sally                           
+    13:30:                           Maxine                   Lily, Jenny              Douglas, Jack            Nicola                   Marie  
+    14:00:                           Maxine                   Bob, Lily                Douglas, Nicola          Marie                    Sally  
+    14:30:                           Sally                    Douglas, Eve             Ryan, Bob                Michael                  Maxine 
+    15:00:                           Maxine                   Sally, Mary              Michael, Ryan            Bob                      Douglas
+    15:30:                           Maxine                   Douglas, Mary            Michael, Ryan            Sally                    Bob    
+    16:00:                           Jenny                    Bob, Mary                Douglas, Michael         Maxine                   Ryan   
+    16:30:                           Douglas                  Sally, Jenny             Ryan, Bob                Eve                      Michael
+    17:00:                           Sally                    Maxine, Douglas          Michael, Ryan            Bob                      Jenny  
+    17:30:  Jenny                    Sally                    Ryan, Eve                Michael, Douglas         Maxine                   Mary   
+    18:00:                           Mary                     Maxine, Jenny            Michael, Douglas         Bob                      Eve    
+    18:30:                           Mary                     Bob, Jenny               Ryan, Douglas            Sally                           
+    19:00:                           Maxine                   Michael, Ryan            Bob, Douglas             Sally                           
+    19:30:                           Maxine                   Ryan, Jenny              Michael, Bob             Sally                           
+    20:00:                           Maxine                   Douglas, Jenny           Michael, Ryan            Eve                             
 
 ## Given
 
