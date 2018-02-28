@@ -1,7 +1,7 @@
 # Nurse scheduling
 This is a simple proof-of-concept project to help mental health nurses schedule their day.
 
-## Given:
+## Given
 
     Time is divided into blocks of 30 minutes.
 
@@ -17,7 +17,7 @@ This is a simple proof-of-concept project to help mental health nurses schedule 
 
     List of medication times that must each have 1 RMN assigned.
 
-## Constraints:
+## Constraints
 Some constraints are absolutely required (hard) and others are merely preferences (soft). For each soft constraint, we place a certain weight on satisfying them. All weights can be adjusted.
 
     Hard: one RMN assigned to each medication block
