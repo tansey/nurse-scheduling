@@ -43,3 +43,6 @@ We use a combination of constraint satisfaction and heuristic greedy search. Giv
 - Use an excel spreadsheet as input
 - Build javascript front-end and make it a web app
 
+## Contact
+If you actually would like to use this for your nursing schedules, contact me: wes.tansey@gmail.com -- I'd love for it to be useful to someone!
+
