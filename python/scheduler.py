@@ -42,11 +42,14 @@ from collections import defaultdict
 from constraint import Problem, AllDifferentConstraint
 
 # General weightings
-RMN_OBSERVATION_PENALTY = 0.5
+HALF_BREAK_PENALTY = 10000
+RMN_GEN_OBS_PENALTY = 100
+RMN_OBSERVATION_PENALTY = 1.5
 CONSECUTIVE_OBSERVATION_PENALTY = 1
 CONSECUTIVE_UNIQUE_OBSERVATION_PENALTY = 2
 RMN_NO_BREAK_PENALTY = 0.1
 HCA_NO_BREAK_PENALTY = 20
+GEN_OBS_SWITCHING_PENALTY = 1000
 
 class Task:
     def __init__(self, name, blocks, nstaffers):
@@ -112,17 +115,18 @@ class Staffer:
         return self.name
 
 class Schedule:
-    def __init__(self, blocks, block_times, staffers, tasks,
+    def __init__(self, blocks, block_times, shifts, staffers, tasks,
                         min_break_block, max_break_block, max_on_break):
         self.blocks = blocks
         self.block_times = block_times
+        self.shifts = shifts
         self.min_break_block = min_break_block
         self.max_break_block = max_break_block
         self.max_on_break = max_on_break
         self.staffers = staffers
         self.tasks = tasks
 
-def solve_block(block, cur_solution, schedule, top_per_block, obs_penalties):
+def solve_block(block, cur_solution, schedule, top_per_block, task_penalties):
     print '\tSetting up'
     block_time = schedule.block_times[block]
 
@@ -149,8 +153,15 @@ def solve_block(block, cur_solution, schedule, top_per_block, obs_penalties):
 
     # Allow up to max_on_break people on break at once
     if breaks_allowed:
-        prev_breaks = [s for v, s in cur_solution.iteritems() if 'Break' in str(v) and s != 'None']
+        prev_breaks = [s for v, s in cur_solution.iteritems() if 'Break' in str(v) and not str(v).startswith('{} Break'.format(schedule.block_times[block-1])) and s != 'None']
         breakable_staffers = [s for s in staffers if s not in prev_breaks]
+        for break_idx in range(schedule.max_on_break):
+            problem.addVariable('{} Break {}'.format(block_time, break_idx), breakable_staffers + ['None'])
+            block_vars.append('{} Break {}'.format(block_time, break_idx))
+    elif block == schedule.max_break_block+1:
+        prev_breaks = [s for v, s in cur_solution.iteritems() if str(v).startswith('{} Break'.format(schedule.block_times[block-1])) and s != 'None']
+        prev_prev_breaks = [s for v, s in cur_solution.iteritems() if str(v).startswith('{} Break'.format(schedule.block_times[block-2])) and s != 'None']
+        breakable_staffers = [s for s in staffers if s in prev_breaks and s not in prev_prev_breaks]
         for break_idx in range(schedule.max_on_break):
             problem.addVariable('{} Break {}'.format(block_time, break_idx), breakable_staffers + ['None'])
             block_vars.append('{} Break {}'.format(block_time, break_idx))
@@ -164,14 +175,15 @@ def solve_block(block, cur_solution, schedule, top_per_block, obs_penalties):
 
     # Score the options
     print '\tScoring'
-    obs_tasks = [task for task in tasks if isinstance(task, PatientObservationTask) or isinstance(task, GeneralObservationTask)]
+    # obs_tasks = [task for task in tasks if isinstance(task, PatientObservationTask) or isinstance(task, GeneralObservationTask)]
     scores = np.zeros(len(solutions))
     for sidx, solution in enumerate(solutions):
         score = 0
         # Add the current block observations
-        for task in obs_tasks:
-            staffer = solution['{} {} {}'.format(block_time, task, i)]
-            score += obs_penalties[staffer]
+        for task in tasks:
+            for i in range(task.nstaffers):
+                staffer = solution['{} {} {}'.format(block_time, task, i)]
+                score += task_penalties[staffer][task]
         
         if breaks_allowed:
             for break_idx in range(schedule.max_on_break):
@@ -185,24 +197,59 @@ def solve_block(block, cur_solution, schedule, top_per_block, obs_penalties):
         scores[sidx] = score
 
     print '\tFinding top'
-    top_solutions = [solutions[i] for i in np.argsort(scores)[:top_per_block]]
-    top_scores = scores[np.argsort(scores)[:top_per_block]]
+    chosen = np.argsort(scores)
+    ntied = (scores == scores[chosen[0]]).sum()
+    if ntied > top_per_block:
+        chosen = chosen[:ntied]
+        np.random.shuffle(chosen)
+    top_solutions = [solutions[i] for i in chosen[:top_per_block]]
+    top_scores = scores[chosen[:top_per_block]]
 
     return top_solutions, top_scores
 
 def solve_block_greedy(schedule, max_on_break=2, top_per_block=2):
     print '{} Solving initial block {}'.format(0, schedule.block_times[0])
-    obs_tasks = [t for t in schedule.tasks if isinstance(t, PatientObservationTask) or isinstance(t, GeneralObservationTask)]
-    obs_penalties = {staffer: RMN_OBSERVATION_PENALTY if staffer.rmn else 0 for staffer in schedule.staffers}
-    top_solutions, top_scores = solve_block(schedule.blocks[0], {}, schedule, top_per_block, obs_penalties)
+    obs_tasks = [t for t in schedule.tasks if isinstance(t, PatientObservationTask)]
+    task_penalties = {staffer: defaultdict(int) for staffer in schedule.staffers}
+    top_solutions, top_scores = solve_block(schedule.blocks[0], {}, schedule, top_per_block, task_penalties)
+    print_solution_blockwise(schedule, top_solutions[0], max_block=0)
     for block in schedule.blocks[1:]:
         print '{} Solving block {} with {} starting solutions'.format(block, schedule.block_times[block], len(top_solutions))
         next_round_solutions = []
         next_round_scores = []
+        block_tasks = [t for t in schedule.tasks if block in t.blocks]
         for solution, score in zip(top_solutions, top_scores):
             # Calculate the penalties for each staffer being put on observation duty
             print '\tCalculating staffer penalties'
             obs_counts = defaultdict(int)
+            for s in schedule.staffers:
+                gen_obs_valid = (block in schedule.shifts
+                                    or solution['{} {} {}'.format(schedule.block_times[block-1], 'General observations', 0)] == s)
+                
+                # Figure out if this person is on break and needs to stay on break
+                on_break = block > schedule.min_break_block and block <= schedule.max_break_block
+                if on_break:
+                    on_break = np.any([solution['{} Break {}'.format(schedule.block_times[block-1], break_idx)] == s for break_idx in range(schedule.max_on_break)])
+                if on_break:
+                    on_break = ~(block > (schedule.min_break_block+1) and np.any([solution['{} Break {}'.format(schedule.block_times[block-2], break_idx)] == s for break_idx in range(schedule.max_on_break)]))
+                        
+                if on_break:
+                    print '{} is on break'.format(s)
+                for task in block_tasks:
+                    if isinstance(task, GeneralObservationTask):
+                        if gen_obs_valid:
+                            task_penalties[s][task] = RMN_GEN_OBS_PENALTY if s.rmn else 0
+                        else:
+                            task_penalties[s][task] = GEN_OBS_SWITCHING_PENALTY
+                    elif isinstance(task, PatientObservationTask):
+                        task_penalties[s][task] = RMN_OBSERVATION_PENALTY if s.rmn else 0
+                    else:
+                        task_penalties[s][task] = 0
+
+                    if on_break:
+                        task_penalties[s][task] += HALF_BREAK_PENALTY
+
+            # Handle consecutive patient observation penalties
             if block >= 3:
                 for b in range(block-3, block):
                     for task in obs_tasks:
@@ -212,12 +259,14 @@ def solve_block_greedy(schedule, max_on_break=2, top_per_block=2):
                             staffer = solution['{} {} {}'.format(schedule.block_times[b], task, i)]
                             obs_counts[staffer] += 1
                 for s,c in obs_counts.iteritems():
-                    if c == 3:
-                        obs_penalties[s] = CONSECUTIVE_OBSERVATION_PENALTY + (RMN_OBSERVATION_PENALTY if s.rmn else 0)
-                    else:
-                        obs_penalties[s] = RMN_OBSERVATION_PENALTY if s.rmn else 0
+                    for task in block_tasks:
+                        if isinstance(task, PatientObservationTask):
+                            if c == 3:
+                                task_penalties[s][task] += CONSECUTIVE_OBSERVATION_PENALTY + (RMN_OBSERVATION_PENALTY if s.rmn else 0)
+                            else:
+                                task_penalties[s][task] += RMN_OBSERVATION_PENALTY if s.rmn else 0
 
-            S, R = solve_block(block, solution, schedule, top_per_block, obs_penalties)
+            S, R = solve_block(block, solution, schedule, top_per_block, task_penalties)
 
             print '\tPicking best {} solutions'.format(top_per_block)
             # Add good solutions
@@ -274,23 +323,28 @@ def print_solution_taskwise(schedule, solution, max_block=None):
 
 def print_solution_blockwise(schedule, solution, max_block=None):
     width = 25
-    header = 'Time'.ljust(8) + ''.join([str(task).ljust(width) for task in schedule.tasks]) + ' Breaks'.ljust(width)
+    header = 'Time'.ljust(8) + ''.join([str(task).ljust(width) for task in schedule.tasks]) + 'Breaks'.ljust(width) + 'Unassigned'.ljust(width)
     print header
     for block in schedule.blocks:
         if max_block is not None and block > max_block:
             break
         line = '{}: '.format(schedule.block_times[block]).ljust(8)
+        working = []
         for task in schedule.tasks:
             if block in task.blocks:
-                staffers = [str(solution['{} {} {}'.format(schedule.block_times[block], task, i)]) for i in range(task.nstaffers)]
+                staffers = [solution['{} {} {}'.format(schedule.block_times[block], task, i)] for i in range(task.nstaffers)]
+                working.extend(staffers)
                 line += ', '.join([str(s) for s in staffers]).ljust(width)
             else:
                 line += ''.ljust(width)
         if block >= schedule.min_break_block and block <= schedule.max_break_block:
-            staffers = [str(solution['{} Break {}'.format(schedule.block_times[block], i)]) for i in range(schedule.max_on_break)]
+            staffers = [solution['{} Break {}'.format(schedule.block_times[block], i)] for i in range(schedule.max_on_break)]
+            working.extend(staffers)
             line += ', '.join([str(s) for s in staffers if s != 'None']).ljust(width)
         else:
             line += ''.ljust(width)
+        unassigned = [s for s in schedule.staffers if block in s.available_blocks and s not in working]
+        line += ', '.join([str(s) for s in unassigned if s != 'None']).ljust(width)
         print line
 
 
@@ -316,10 +370,11 @@ if __name__ == '__main__':
                 Staffer('Eve', True, False, range(14,26)),
                 Staffer('Ryan', False, True, range(14,26)),
                 Staffer('Michael', False, True, range(14,26))]
+    shifts = [0,14]
     min_break_block = 12
     max_break_block = 22
     max_on_break = 1
 
-    schedule = Schedule(blocks, block_times, staffers, tasks, min_break_block, max_break_block, max_on_break)
+    schedule = Schedule(blocks, block_times, shifts, staffers, tasks, min_break_block, max_break_block, max_on_break)
 
     solve_block_greedy(schedule)
