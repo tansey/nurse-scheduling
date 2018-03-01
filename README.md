@@ -8,33 +8,34 @@ Imagine we have a schedule setup like the following example done by-hand by an R
 
 The current scheduler app would output the following schedule automatically:
 
-    Time    Medication               General observations     Patient A (2:1)          Patient B (2:1)          Patient C (1:1)           Breaks
-    7:30:                            Marie                    Sally, Maxine            Nicola, Douglas          Bob                             
-    8:00:                            Marie                    Sally, Maxine            Nicola, Douglas          Bob                             
-    8:30:   Jack                     Bob                      Sally, Lily              Douglas, Nicola          Marie                           
-    9:00:                            Lily                     Maxine, Bob              Jack, Nicola             Jenny                           
-    9:30:                            Marie                    Maxine, Jenny            Douglas, Bob             Sally                           
-    10:00:                           Maxine                   Sally, Jenny             Nicola, Bob              Marie                           
-    10:30:                           Sally                    Marie, Jenny             Nicola, Bob              Jack                            
-    11:00:                           Maxine                   Nicola, Jenny            Jack, Bob                Sally                           
-    11:30:                           Maxine                   Sally, Bob               Jack, Nicola             Marie                           
-    12:00:                           Maxine                   Jenny, Sally             Bob, Jack                Marie                           
-    12:30:  Jack                     Marie                    Maxine, Sally            Nicola, Bob              Jenny                           
-    13:00:                           Jenny                    Jack, Marie              Nicola, Bob              Sally                           
-    13:30:                           Maxine                   Lily, Jenny              Douglas, Jack            Nicola                   Marie  
-    14:00:                           Maxine                   Bob, Lily                Douglas, Nicola          Marie                    Sally  
-    14:30:                           Sally                    Douglas, Eve             Ryan, Bob                Michael                  Maxine 
-    15:00:                           Maxine                   Sally, Mary              Michael, Ryan            Bob                      Douglas
-    15:30:                           Maxine                   Douglas, Mary            Michael, Ryan            Sally                    Bob    
-    16:00:                           Jenny                    Bob, Mary                Douglas, Michael         Maxine                   Ryan   
-    16:30:                           Douglas                  Sally, Jenny             Ryan, Bob                Eve                      Michael
-    17:00:                           Sally                    Maxine, Douglas          Michael, Ryan            Bob                      Jenny  
-    17:30:  Jenny                    Sally                    Ryan, Eve                Michael, Douglas         Maxine                   Mary   
-    18:00:                           Mary                     Maxine, Jenny            Michael, Douglas         Bob                      Eve    
-    18:30:                           Mary                     Bob, Jenny               Ryan, Douglas            Sally                           
-    19:00:                           Maxine                   Michael, Ryan            Bob, Douglas             Sally                           
-    19:30:                           Maxine                   Ryan, Jenny              Michael, Bob             Sally                           
-    20:00:                           Maxine                   Douglas, Jenny           Michael, Ryan            Eve                             
+    Time    Medication               General observations     Patient A (2:1)          Patient B (2:1)          Patient C (1:1)           Breaks                   Unassigned
+    7:30:                            Jack                     Maxine, Jenny            Bob, Douglas             Marie                                             Lily, Sally, Nicola
+    8:00:                            Jack                     Maxine, Douglas          Bob, Nicola              Sally                                             Lily, Jenny, Marie
+    8:30:   Jenny                    Jack                     Marie, Maxine            Nicola, Douglas          Sally                                             Lily, Bob
+    9:00:                            Jack                     Marie, Sally             Nicola, Douglas          Bob                                               Lily, Jenny, Maxine
+    9:30:                            Jack                     Marie, Sally             Douglas, Bob             Maxine                                            Lily, Jenny, Nicola
+    10:00:                           Jack                     Marie, Maxine            Nicola, Bob              Sally                                             Lily, Jenny
+    10:30:                           Jack                     Sally, Marie             Nicola, Bob              Maxine                                            Jenny
+    11:00:                           Jack                     Sally, Marie             Bob, Nicola              Maxine                                            Jenny
+    11:30:                           Jack                     Sally, Marie             Nicola, Bob              Maxine                                            Jenny
+    12:00:                           Jack                     Sally, Marie             Nicola, Bob              Maxine                                            Jenny
+    12:30:  Jenny                    Jack                     Marie, Sally             Bob, Nicola              Maxine
+    13:00:                           Jack                     Marie, Maxine            Bob, Nicola              Sally                                             Jenny
+    13:30:                           Jack                     Sally, Douglas           Bob, Nicola              Marie                    Maxine                   Lily, Jenny
+    14:00:                           Jack                     Sally, Marie             Nicola, Bob              Douglas                  Maxine                   Lily, Jenny
+    14:30:                           Sally                    Jenny, Maxine            Douglas, Michael         Ryan                     Bob                      Mary, Eve
+    15:00:                           Sally                    Maxine, Eve              Douglas, Michael         Ryan                     Bob                      Jenny, Mary
+    15:30:                           Sally                    Bob, Mary                Ryan, Michael            Maxine                   Douglas                  Jenny, Eve
+    16:00:                           Sally                    Mary, Ryan               Bob, Michael             Maxine                   Douglas                  Jenny, Eve
+    16:30:                           Sally                    Maxine, Jenny            Bob, Michael             Douglas                  Ryan                     Mary, Eve
+    17:00:                           Sally                    Douglas, Maxine          Bob, Michael             Eve                      Ryan                     Jenny, Mary
+    17:30:  Mary                     Sally                    Maxine, Jenny            Ryan, Douglas            Bob                      Michael                  Eve
+    18:00:                           Sally                    Maxine, Mary             Ryan, Bob                Douglas                  Michael                  Jenny, Eve
+    18:30:                           Sally                    Douglas, Maxine          Michael, Ryan            Bob                      Eve                      Jenny, Mary
+    19:00:                           Sally                    Bob, Michael             Ryan, Douglas            Maxine                                            Jenny, Mary, Eve
+    19:30:                           Sally                    Douglas, Ryan            Bob, Michael             Maxine                                            Jenny, Mary, Eve
+    20:00:                           Sally                    Michael, Bob             Douglas, Ryan            Maxine                                            Jenny, Mary, Eve
+
 
 ## Given
 
